@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-void main() {
+void main() async {
+  await dotenv.load(fileName: ".env");
   runApp(MyApp());
 }
 
@@ -48,24 +50,36 @@ class Commit {
 }
 
 Future<List<Repository>> fetchRepositories() async {
-  final response = await http.get(Uri.parse('https://api.github.com/users/freeCodeCamp/repos'));
+  final String token = dotenv.env['GITHUB_TOKEN']!;
+  final response = await http.get(
+    Uri.parse('https://api.github.com/users/freeCodeCamp/repos'),
+    headers: {
+      'Authorization': 'token $token',
+    },
+  );
 
   if (response.statusCode == 200) {
     List<dynamic> data = json.decode(response.body);
     return data.map((repo) => Repository.fromJson(repo)).toList();
   } else {
-    throw Exception('Failed to load repositories');
+    throw Exception('Failed to load repositories: ${response.reasonPhrase}');
   }
 }
 
 Future<Commit> fetchLastCommit(String repoFullName) async {
-  final response = await http.get(Uri.parse('https://api.github.com/repos/$repoFullName/commits'));
+  final String token = dotenv.env['GITHUB_TOKEN']!;
+  final response = await http.get(
+    Uri.parse('https://api.github.com/repos/$repoFullName/commits'),
+    headers: {
+      'Authorization': 'token $token',
+    },
+  );
 
   if (response.statusCode == 200) {
     List<dynamic> data = json.decode(response.body);
     return Commit.fromJson(data.first);
   } else {
-    throw Exception('Failed to load commit');
+    throw Exception('Failed to load commit: ${response.reasonPhrase}');
   }
 }
 
